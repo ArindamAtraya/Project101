@@ -8,6 +8,8 @@ let hospitals = [];
 let pharmacies = [];
 let tests = [];
 let currentDoctorForBooking = null;
+let currentLocation = '';
+let currentSpecialty = '';
 
 // DOM Elements
 const elements = {
@@ -18,17 +20,23 @@ const elements = {
     bookingModal: document.getElementById('bookingModal'),
     searchFilterModal: document.getElementById('searchFilterModal'),
     resultsModal: document.getElementById('resultsModal'),
+    locationModal: document.getElementById('locationModal'),
+    providersModal: document.getElementById('providersModal'),
+    doctorsModal: document.getElementById('doctorsModal'),
     loginForm: document.getElementById('loginForm'),
     signupForm: document.getElementById('signupForm'),
     bookingForm: document.getElementById('bookingForm'),
     searchFilterForm: document.getElementById('searchFilterForm'),
+    locationForm: document.getElementById('locationForm'),
     doctorsContainer: document.getElementById('doctors-container'),
     hospitalsContainer: document.getElementById('hospitals-container'),
     pharmaciesContainer: document.getElementById('pharmacies-container'),
     testsContainer: document.getElementById('tests-container'),
     specialtyFilter: document.getElementById('specialtyFilter'),
     hospitalFilter: document.getElementById('hospitalFilter'),
-    globalSearch: document.getElementById('globalSearch')
+    globalSearch: document.getElementById('globalSearch'),
+    providersContainer: document.getElementById('providersContainer'),
+    doctorsListContainer: document.getElementById('doctorsContainer')
 };
 
 // Initialize Application
@@ -76,6 +84,14 @@ function setupEventListeners() {
         elements.searchFilterForm.addEventListener('submit', function(e) {
             e.preventDefault();
             findDoctorAvailability();
+        });
+    }
+    
+    // Location form submission
+    if (elements.locationForm) {
+        elements.locationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            findHealthcareProviders();
         });
     }
     
@@ -895,6 +911,300 @@ function clearSearch() {
     closeAllModals();
 }
 
+// Location-based Healthcare Provider Search
+function openLocationModal() {
+    showModal('locationModal');
+}
+
+function findHealthcareProviders() {
+    const location = document.getElementById('bookingLocation').value;
+    const specialty = document.getElementById('bookingSpecialty').value;
+
+    if (!location) {
+        showNotification('Please enter a location', 'error');
+        return;
+    }
+
+    currentLocation = location;
+    currentSpecialty = specialty;
+
+    // Simulate API call - in real app, this would call your backend
+    const providers = simulateHealthcareProviderSearch(location, specialty);
+    
+    displayHealthcareProviders(providers, { location, specialty });
+    closeAllModals();
+    showModal('providersModal');
+}
+
+function simulateHealthcareProviderSearch(location, specialty) {
+    // Mock data - in real app, this would come from your backend
+    const allProviders = [
+        {
+            id: 'hosp1',
+            name: 'Apollo Hospital',
+            type: 'hospital',
+            address: '123 Medical Avenue, City Center',
+            distance: '2.3 km away',
+            phone: '+1 234-567-8900',
+            rating: 4.8,
+            specialties: ['Cardiology', 'Orthopedics', 'Neurology', 'Pediatrics'],
+            doctors: [
+                { id: 'doc1', name: 'Dr. Sarah Wilson', specialty: 'Cardiology', availableSlots: ['09:00', '11:00', '14:00'] },
+                { id: 'doc2', name: 'Dr. Michael Brown', specialty: 'Orthopedics', availableSlots: ['10:00', '13:00', '15:00'] },
+                { id: 'doc3', name: 'Dr. Emily Chen', specialty: 'Neurology', availableSlots: ['09:30', '12:00', '16:00'] }
+            ]
+        },
+        {
+            id: 'hosp2',
+            name: 'City Hospital',
+            type: 'hospital',
+            address: '456 Health Street, Downtown',
+            distance: '1.8 km away',
+            phone: '+1 234-567-8901',
+            rating: 4.5,
+            specialties: ['Cardiology', 'Dermatology', 'Gynecology'],
+            doctors: [
+                { id: 'doc4', name: 'Dr. Robert Johnson', specialty: 'Cardiology', availableSlots: ['08:00', '12:00', '17:00'] },
+                { id: 'doc5', name: 'Dr. Lisa Garcia', specialty: 'Dermatology', availableSlots: ['09:00', '14:00', '16:30'] }
+            ]
+        },
+        {
+            id: 'clinic1',
+            name: 'MedPlus Clinic',
+            type: 'clinic',
+            address: '789 Care Road, Westside',
+            distance: '3.5 km away',
+            phone: '+1 234-567-8902',
+            rating: 4.6,
+            specialties: ['General Medicine', 'Pediatrics'],
+            doctors: [
+                { id: 'doc6', name: 'Dr. James Wilson', specialty: 'General Medicine', availableSlots: ['08:30', '11:30', '15:30'] },
+                { id: 'doc7', name: 'Dr. Maria Rodriguez', specialty: 'Pediatrics', availableSlots: ['09:00', '13:00', '16:00'] }
+            ]
+        },
+        {
+            id: 'pharm1',
+            name: 'Wellness Pharmacy & Clinic',
+            type: 'pharmacy',
+            address: '321 Health Lane, Northside',
+            distance: '4.2 km away',
+            phone: '+1 234-567-8903',
+            rating: 4.4,
+            specialties: ['General Medicine'],
+            doctors: [
+                { id: 'doc8', name: 'Dr. David Lee', specialty: 'General Medicine', availableSlots: ['10:00', '14:00', '18:00'] }
+            ]
+        }
+    ];
+
+    // Filter based on search criteria
+    let filtered = allProviders;
+
+    if (location) {
+        filtered = filtered.filter(provider => 
+            provider.address.toLowerCase().includes(location.toLowerCase())
+        );
+    }
+
+    if (specialty) {
+        filtered = filtered.filter(provider => 
+            provider.specialties.includes(specialty)
+        );
+    }
+
+    return filtered;
+}
+
+function displayHealthcareProviders(providers, searchCriteria) {
+    const container = document.getElementById('providersContainer');
+    const title = document.getElementById('providersTitle');
+    
+    // Update title with search info
+    let titleText = 'Healthcare Providers';
+    if (searchCriteria.location) {
+        titleText = `Providers in ${searchCriteria.location}`;
+    }
+    title.textContent = titleText;
+
+    if (providers.length === 0) {
+        container.innerHTML = `
+            <div class="no-availability">
+                <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h3>No Providers Found</h3>
+                <p>No healthcare providers found in ${searchCriteria.location}. Try adjusting your search location.</p>
+                <button class="btn btn-primary" onclick="openLocationModal()" style="margin-top: 15px;">
+                    Modify Search
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="filter-tags">
+            <div class="filter-tag">
+                <i class="fas fa-map-marker-alt"></i>
+                Location: ${searchCriteria.location}
+                <span class="remove" onclick="clearLocationSearch()">×</span>
+            </div>
+            ${searchCriteria.specialty ? `
+                <div class="filter-tag">
+                    <i class="fas fa-stethoscope"></i>
+                    Specialty: ${searchCriteria.specialty}
+                </div>
+            ` : ''}
+        </div>
+        
+        <div class="results-grid">
+    `;
+
+    providers.forEach(provider => {
+        const typeIcon = getLocationTypeIcon(provider.type);
+        const typeColor = getLocationTypeColor(provider.type);
+        
+        html += `
+            <div class="provider-card">
+                <div class="provider-header">
+                    <div class="provider-name">${provider.name}</div>
+                    <div class="provider-type" style="background: ${typeColor}">
+                        ${typeIcon} ${provider.type.toUpperCase()}
+                    </div>
+                </div>
+                
+                <div class="provider-info">
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        ${provider.address}
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-location-arrow"></i>
+                        ${provider.distance}
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-phone"></i>
+                        ${provider.phone}
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-star"></i>
+                        Rating: ${provider.rating}/5
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-stethoscope"></i>
+                        Specialties: ${provider.specialties.join(', ')}
+                    </div>
+                </div>
+                
+                <div class="provider-doctors">
+                    <h4>Available Doctors:</h4>
+                    <div class="doctors-list">
+                        ${provider.doctors.map(doctor => `
+                            <div class="doctor-item">
+                                <div class="doctor-info">
+                                    <div class="doctor-name">${doctor.name}</div>
+                                    <div class="doctor-specialty">${doctor.specialty}</div>
+                                </div>
+                                <div class="doctor-availability">
+                                    ${doctor.availableSlots.map(slot => `
+                                        <button class="time-slot" onclick="bookDoctorAppointment('${provider.id}', '${doctor.id}', '${slot}', '${doctor.name}', '${provider.name}')">
+                                            ${slot}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="viewAllDoctors('${provider.id}')">
+                        <i class="fas fa-user-md"></i> View All Doctors
+                    </button>
+                    <button class="btn btn-outline" onclick="getDirections('${provider.address}')">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function viewAllDoctors(providerId) {
+    // Find the provider
+    const providers = simulateHealthcareProviderSearch(currentLocation, currentSpecialty);
+    const provider = providers.find(p => p.id === providerId);
+    
+    if (!provider) return;
+    
+    // Display all doctors in a modal
+    const container = document.getElementById('doctorsContainer');
+    const title = document.getElementById('doctorsTitle');
+    
+    title.textContent = `Doctors at ${provider.name}`;
+    
+    let html = `
+        <div class="filter-tags">
+            <div class="filter-tag">
+                <i class="fas fa-map-marker-alt"></i>
+                Location: ${currentLocation}
+            </div>
+            <div class="filter-tag">
+                <i class="fas fa-hospital"></i>
+                Provider: ${provider.name}
+            </div>
+        </div>
+        
+        <div class="doctors-list">
+    `;
+    
+    provider.doctors.forEach(doctor => {
+        html += `
+            <div class="doctor-item">
+                <div class="doctor-info">
+                    <div class="doctor-name">${doctor.name}</div>
+                    <div class="doctor-specialty">${doctor.specialty}</div>
+                </div>
+                <div class="doctor-availability">
+                    ${doctor.availableSlots.map(slot => `
+                        <button class="time-slot" onclick="bookDoctorAppointment('${provider.id}', '${doctor.id}', '${slot}', '${doctor.name}', '${provider.name}')">
+                            ${slot}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+    container.innerHTML = html;
+    
+    closeAllModals();
+    showModal('doctorsModal');
+}
+
+function bookDoctorAppointment(providerId, doctorId, timeSlot, doctorName, providerName) {
+    if (!currentUser) {
+        showNotification('Please login to book an appointment', 'error');
+        showModal('loginModal');
+        return;
+    }
+
+    showNotification(`Booking appointment with ${doctorName} at ${providerName} - ${timeSlot}`, 'success');
+    
+    // In real app, this would call your booking API
+    setTimeout(() => {
+        closeAllModals();
+        showNotification('Appointment booked successfully!', 'success');
+    }, 2000);
+}
+
+function clearLocationSearch() {
+    document.getElementById('locationForm').reset();
+    closeAllModals();
+}
+
 // UI Helper Functions
 function switchTab(tabId) {
     // Update tabs
@@ -1110,7 +1420,11 @@ window.searchAll = searchAll;
 window.closeQueueInfo = closeQueueInfo;
 window.viewHospitalDoctors = viewHospitalDoctors;
 window.openSearchFilter = openSearchFilter;
+window.openLocationModal = openLocationModal;
 window.bookAppointmentFromSearch = bookAppointmentFromSearch;
 window.viewLocationDetails = viewLocationDetails;
 window.getDirections = getDirections;
 window.clearSearch = clearSearch;
+window.clearLocationSearch = clearLocationSearch;
+window.viewAllDoctors = viewAllDoctors;
+window.bookDoctorAppointment = bookDoctorAppointment;

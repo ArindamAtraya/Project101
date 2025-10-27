@@ -63,6 +63,9 @@
                 </div>
                 <h3>Book Appointments</h3>
                 <p>Easy online booking with real-time availability</p>
+                <button class="search-feature-btn" onclick="openLocationModal()">
+                    <i class="fas fa-calendar-plus"></i> Book Now
+                </button>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">
@@ -308,6 +311,65 @@
             </div>
             <div class="results-container" id="resultsContainer">
                 <!-- Results will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Location Selection Modal for Book Appointments -->
+    <div class="modal" id="locationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Book Appointment - Select Location</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="locationForm">
+                <div class="form-group">
+                    <label for="bookingLocation">Location</label>
+                    <input type="text" id="bookingLocation" class="form-control" placeholder="Enter city or area..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bookingSpecialty">Specialty (Optional)</label>
+                    <select id="bookingSpecialty" class="form-control">
+                        <option value="">All Specialties</option>
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="Dermatology">Dermatology</option>
+                        <option value="Pediatrics">Pediatrics</option>
+                        <option value="Orthopedics">Orthopedics</option>
+                        <option value="Neurology">Neurology</option>
+                        <option value="Gynecology">Gynecology</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-search"></i> Find Healthcare Providers
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Healthcare Providers Modal -->
+    <div class="modal" id="providersModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="providersTitle">Healthcare Providers</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="providers-container" id="providersContainer">
+                <!-- Providers will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Doctors List Modal -->
+    <div class="modal" id="doctorsModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="doctorsTitle">Available Doctors</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="doctors-container" id="doctorsContainer">
+                <!-- Doctors will be loaded here -->
             </div>
         </div>
     </div>
