@@ -44,7 +44,85 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     loadInitialData();
+    initializeDemoAccounts();
+    initializeMobileFeatures();
 });
+
+// Demo Accounts Initialization
+function initializeDemoAccounts() {
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    
+    // Demo patient account with hospital records
+    const demoPatient = {
+        id: 'user_001',
+        name: 'John Doe',
+        email: 'patient@demo.com',
+        password: 'demo123',
+        role: 'patient',
+        patientId: 'P123456',
+        phone: '+1 234-567-8900',
+        dob: '1988-05-15'
+    };
+
+    // Check if demo account already exists
+    const existingPatient = users.find(u => u.email === demoPatient.email);
+    if (!existingPatient) {
+        users.push(demoPatient);
+        localStorage.setItem('users', JSON.stringify(users));
+    }
+}
+
+// Mobile Features Initialization
+function initializeMobileFeatures() {
+    // Handle viewport height for mobile browsers
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    
+    // Initialize touch interactions
+    initializeTouchInteractions();
+    
+    // Performance optimization for mobile
+    optimizeForMobile();
+}
+
+function setViewportHeight() {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+function initializeTouchInteractions() {
+    const touchElements = document.querySelectorAll('.card, .feature-card, .btn, .time-slot');
+    
+    touchElements.forEach(element => {
+        element.addEventListener('touchstart', function() {
+            this.classList.add('touch-active');
+        }, { passive: true });
+        
+        element.addEventListener('touchend', function() {
+            this.classList.remove('touch-active');
+        }, { passive: true });
+    });
+}
+
+function optimizeForMobile() {
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            setViewportHeight();
+        }, 250);
+    });
+
+    // Prevent zoom on double-tap (iOS)
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+}
 
 function initializeApp() {
     // Check if user is logged in
@@ -54,6 +132,22 @@ function initializeApp() {
     if (token && savedUser) {
         currentUser = JSON.parse(savedUser);
         updateAuthUI();
+    }
+    
+    // Add device type detection
+    detectDeviceType();
+}
+
+function detectDeviceType() {
+    const isMobile = window.innerWidth <= 768;
+    const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+    
+    if (isMobile) {
+        document.body.classList.add('mobile-device');
+    } else if (isTablet) {
+        document.body.classList.add('tablet-device');
+    } else {
+        document.body.classList.add('desktop-device');
     }
 }
 
@@ -124,6 +218,7 @@ function setupEventListeners() {
     if (showSignup) {
         showSignup.addEventListener('click', (e) => {
             e.preventDefault();
+            closeAllModals();
             showModal('signupModal');
         });
     }
@@ -131,12 +226,13 @@ function setupEventListeners() {
     if (showLogin) {
         showLogin.addEventListener('click', (e) => {
             e.preventDefault();
+            closeAllModals();
             showModal('loginModal');
         });
     }
 }
 
-// API Functions
+// API Functions with Fallback to Demo
 async function apiCall(endpoint, options = {}) {
     try {
         const token = localStorage.getItem('token');
@@ -161,30 +257,25 @@ async function apiCall(endpoint, options = {}) {
         return await response.json();
     } catch (error) {
         console.error('API Call Error:', error);
+        
+        // For auth endpoints, throw error to trigger demo fallback
+        if (endpoint.includes('/auth/')) {
+            throw error;
+        }
+        
         showNotification('Error connecting to server', 'error');
         throw error;
     }
 }
 
-// Authentication Functions
-async function verifyToken(token) {
-    try {
-        const data = await apiCall('/auth/verify');
-        currentUser = data.user;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        updateAuthUI();
-    } catch (error) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('currentUser');
-    }
-}
-
+// Authentication Functions with Demo Fallback
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
     try {
+        // Try API call first
         const data = await apiCall('/auth/login', {
             method: 'POST',
             body: JSON.stringify({ email, password })
@@ -204,7 +295,9 @@ async function handleLogin(e) {
             }, 1000);
         }
     } catch (error) {
-        showNotification('Login failed. Please check your credentials.', 'error');
+        // API failed, try demo authentication
+        console.log('API login failed, trying demo authentication...');
+        handleDemoLogin(email, password);
     }
 }
 
@@ -216,6 +309,7 @@ async function handleSignup(e) {
     const phone = document.getElementById('signupPhone').value;
 
     try {
+        // Try API call first
         const data = await apiCall('/auth/register', {
             method: 'POST',
             body: JSON.stringify({ name, email, password, phone, role: 'patient' })
@@ -228,8 +322,76 @@ async function handleSignup(e) {
         closeAllModals();
         showNotification('Account created successfully!', 'success');
     } catch (error) {
-        showNotification('Signup failed. Please try again.', 'error');
+        // API failed, create demo account
+        console.log('API signup failed, creating demo account...');
+        createDemoAccount(name, email, password, phone);
     }
+}
+
+// Demo Authentication Functions
+function handleDemoLogin(email, password) {
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const user = users.find(u => u.email === email && u.password === password);
+    
+    if (user) {
+        // Generate demo token
+        const token = 'demo_token_' + Math.random().toString(36).substr(2);
+        localStorage.setItem('token', token);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        currentUser = user;
+        
+        updateAuthUI();
+        closeAllModals();
+        showNotification('Demo login successful!', 'success');
+        
+        // Redirect to dashboard for doctors/hospitals
+        if (currentUser.role === 'doctor' || currentUser.role === 'hospital') {
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000);
+        }
+    } else {
+        // Check if it's the pre-created demo account
+        if (email === 'patient@demo.com' && password === 'demo123') {
+            // Auto-create the demo account if it doesn't exist
+            initializeDemoAccounts();
+            handleDemoLogin(email, password);
+        } else {
+            showNotification('Invalid email or password. Try: patient@demo.com / demo123', 'error');
+        }
+    }
+}
+
+function createDemoAccount(name, email, password, phone) {
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    
+    // Check if user already exists
+    if (users.find(u => u.email === email)) {
+        showNotification('User already exists with this email', 'error');
+        return;
+    }
+    
+    const newUser = {
+        id: 'user_' + Date.now(),
+        name: name,
+        email: email,
+        password: password,
+        phone: phone,
+        role: 'patient',
+        patientId: 'P' + Math.random().toString(36).substr(2, 6).toUpperCase()
+    };
+    
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    
+    const token = 'demo_token_' + Math.random().toString(36).substr(2);
+    localStorage.setItem('token', token);
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
+    currentUser = newUser;
+    
+    updateAuthUI();
+    closeAllModals();
+    showNotification('Demo account created successfully!', 'success');
 }
 
 function handleLogout() {
@@ -340,7 +502,7 @@ function createDoctorCard(doctor) {
             </div>
             <div class="card-footer">
                 <div class="price">₹${doctor.fee}</div>
-                <button class="btn btn-primary" onclick="openBookingModal('${doctor.id}')">Book Appointment</button>
+                <button class="btn btn-primary" onclick="openDoctorAvailability('${doctor.id}')">Check Availability</button>
             </div>
         </div>
     `;
@@ -500,7 +662,24 @@ function searchAll() {
     showNotification(`Found ${filteredDoctors.length} doctors matching "${query}"`, 'info');
 }
 
-// Booking Functions
+// NEW: Function to open doctor availability page
+function openDoctorAvailability(doctorId) {
+    if (!currentUser) {
+        showNotification('Please login to book an appointment', 'error');
+        showModal('loginModal');
+        return;
+    }
+
+    // Redirect to doctor availability page
+    window.location.href = `doctor-availability.html?doctorId=${doctorId}`;
+}
+
+// NEW: Function to open booking dashboard
+function openBookingDashboard(bookingId) {
+    window.location.href = `booking-dashboard.html?bookingId=${bookingId}`;
+}
+
+// Update the existing openBookingModal function to redirect to availability page
 function openBookingModal(doctorId) {
     if (!currentUser) {
         showNotification('Please login to book an appointment', 'error');
@@ -508,20 +687,8 @@ function openBookingModal(doctorId) {
         return;
     }
 
-    const doctor = doctors.find(d => d.id === doctorId);
-    if (!doctor) return;
-
-    currentDoctorForBooking = doctor;
-    document.getElementById('bookingTitle').textContent = `Book Appointment with ${doctor.name}`;
-    
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('bookingDate').min = today;
-    document.getElementById('bookingDate').value = today;
-    
-    // Generate time slots
-    generateTimeSlots();
-    showModal('bookingModal');
+    // Redirect to doctor availability page instead of opening modal
+    openDoctorAvailability(doctorId);
 }
 
 function generateTimeSlots() {
@@ -684,6 +851,7 @@ function simulateDoctorSearch(doctorName, location, specialty, date) {
             phone: '+1 234-567-8900',
             doctor: 'Dr. Sarah Wilson',
             specialty: 'Cardiology',
+            doctorId: 'doc1',
             availableSlots: ['09:00', '11:00', '14:00', '16:00']
         },
         {
@@ -695,6 +863,7 @@ function simulateDoctorSearch(doctorName, location, specialty, date) {
             phone: '+1 234-567-8901',
             doctor: 'Dr. Sarah Wilson',
             specialty: 'Cardiology',
+            doctorId: 'doc1',
             availableSlots: ['10:00', '13:00', '15:00']
         },
         {
@@ -704,8 +873,9 @@ function simulateDoctorSearch(doctorName, location, specialty, date) {
             address: '789 Care Road, Westside',
             distance: '3.5 km away',
             phone: '+1 234-567-8902',
-            doctor: 'Dr. Sarah Wilson',
-            specialty: 'Cardiology',
+            doctor: 'Dr. Michael Brown',
+            specialty: 'Orthopedics',
+            doctorId: 'doc2',
             availableSlots: ['09:30', '11:30', '14:30']
         },
         {
@@ -715,8 +885,9 @@ function simulateDoctorSearch(doctorName, location, specialty, date) {
             address: '321 Health Lane, Northside',
             distance: '4.2 km away', 
             phone: '+1 234-567-8903',
-            doctor: 'Dr. Sarah Wilson',
-            specialty: 'Cardiology',
+            doctor: 'Dr. Emily Chen',
+            specialty: 'Neurology',
+            doctorId: 'doc3',
             availableSlots: ['08:00', '12:00', '17:00']
         }
     ];
@@ -843,8 +1014,8 @@ function displaySearchResults(results, searchCriteria) {
                 </div>
                 
                 <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="viewLocationDetails('${location.id}')">
-                        <i class="fas fa-info-circle"></i> View Details
+                    <button class="btn btn-primary" onclick="openDoctorAvailability('${location.doctorId}')">
+                        <i class="fas fa-info-circle"></i> View Details & Book
                     </button>
                     <button class="btn btn-outline" onclick="getDirections('${location.address}')">
                         <i class="fas fa-directions"></i> Get Directions
@@ -878,6 +1049,7 @@ function getLocationTypeColor(type) {
     return colors[type] || '#64748b';
 }
 
+// Update the bookAppointmentFromSearch function
 function bookAppointmentFromSearch(locationId, timeSlot, doctorName, locationName) {
     if (!currentUser) {
         showNotification('Please login to book an appointment', 'error');
@@ -885,19 +1057,21 @@ function bookAppointmentFromSearch(locationId, timeSlot, doctorName, locationNam
         return;
     }
 
-    const date = document.getElementById('appointmentDate').value;
-    
-    showNotification(`Booking appointment with ${doctorName} at ${locationName} - ${timeSlot} on ${date}`, 'success');
-    
-    // In real app, this would call your booking API
-    setTimeout(() => {
-        closeAllModals();
-        showNotification('Appointment booked successfully!', 'success');
-    }, 2000);
+    // For demo purposes, redirect to availability page of first doctor
+    openDoctorAvailability('doc1');
 }
 
+// Update the viewLocationDetails function
 function viewLocationDetails(locationId) {
-    showNotification('Location details feature coming soon!', 'info');
+    // Find the location and redirect to doctor availability
+    const locations = simulateDoctorSearch('', '', '', '');
+    const location = locations.find(loc => loc.id === locationId);
+    
+    if (location && location.doctorId) {
+        openDoctorAvailability(location.doctorId);
+    } else {
+        showNotification('Doctor details not available', 'info');
+    }
 }
 
 function getDirections(address) {
@@ -1116,8 +1290,8 @@ function displayHealthcareProviders(providers, searchCriteria) {
                 </div>
                 
                 <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="viewAllDoctors('${provider.id}')">
-                        <i class="fas fa-user-md"></i> View All Doctors
+                    <button class="btn btn-primary" onclick="openDoctorAvailability('${provider.doctors[0]?.id || 'doc1'}')">
+                        <i class="fas fa-user-md"></i> View Doctors & Book
                     </button>
                     <button class="btn btn-outline" onclick="getDirections('${provider.address}')">
                         <i class="fas fa-directions"></i> Get Directions
@@ -1168,10 +1342,15 @@ function viewAllDoctors(providerId) {
                 </div>
                 <div class="doctor-availability">
                     ${doctor.availableSlots.map(slot => `
-                        <button class="time-slot" onclick="bookDoctorAppointment('${provider.id}', '${doctor.id}', '${slot}', '${doctor.name}', '${provider.name}')">
+                        <button class="time-slot" onclick="openDoctorAvailability('${doctor.id}')">
                             ${slot}
                         </button>
                     `).join('')}
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-primary btn-sm" onclick="openDoctorAvailability('${doctor.id}')">
+                        <i class="fas fa-calendar-plus"></i> View Full Availability
+                    </button>
                 </div>
             </div>
         `;
@@ -1191,13 +1370,8 @@ function bookDoctorAppointment(providerId, doctorId, timeSlot, doctorName, provi
         return;
     }
 
-    showNotification(`Booking appointment with ${doctorName} at ${providerName} - ${timeSlot}`, 'success');
-    
-    // In real app, this would call your booking API
-    setTimeout(() => {
-        closeAllModals();
-        showNotification('Appointment booked successfully!', 'success');
-    }, 2000);
+    // Redirect to doctor availability page
+    openDoctorAvailability(doctorId);
 }
 
 function clearLocationSearch() {
@@ -1229,6 +1403,13 @@ function showModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // Focus management for accessibility
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusableElements.length > 0) {
+            focusableElements[0].focus();
+        }
     }
 }
 
@@ -1236,6 +1417,7 @@ function closeAllModals() {
     document.querySelectorAll('.modal').forEach(modal => {
         modal.style.display = 'none';
     });
+    document.body.style.overflow = 'auto';
 }
 
 function updateAuthUI() {
@@ -1248,7 +1430,7 @@ function updateAuthUI() {
             <button class="btn btn-outline" onclick="handleLogout()">Logout</button>
             ${currentUser.role !== 'patient' ? 
                 `<button class="btn btn-primary" onclick="window.location.href='dashboard.html'">Dashboard</button>` : 
-                `<button class="btn btn-primary" onclick="showNotification('Patient dashboard coming soon!', 'info')">My Appointments</button>`
+                `<button class="btn btn-primary" onclick="window.location.href='patient-dashboard.html'">My Dashboard</button>`
             }
         `;
     } else {
@@ -1264,25 +1446,48 @@ function updateAuthUI() {
     }
 }
 
-function showNotification(message, type = 'info') {
-    // Remove existing notifications
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(notif => notif.remove());
-
+// Enhanced Notification System
+function showNotification(message, type = 'info', duration = 4000) {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-    notification.textContent = message;
+    notification.innerHTML = `
+        <i class="fas fa-${getNotificationIcon(type)}"></i>
+        <span>${message}</span>
+    `;
     
     document.body.appendChild(notification);
     
     // Trigger animation
     setTimeout(() => notification.classList.add('show'), 100);
     
-    // Auto remove after 5 seconds
+    // Auto remove
     setTimeout(() => {
         notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 5000);
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 400);
+    }, duration);
+    
+    // Click to dismiss
+    notification.addEventListener('click', () => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 400);
+    });
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'success': 'check-circle',
+        'error': 'exclamation-circle',
+        'info': 'info-circle'
+    };
+    return icons[type] || 'info-circle';
 }
 
 // Utility Functions
@@ -1294,6 +1499,11 @@ function viewHospitalDoctors(hospitalId) {
         renderDoctors(hospitalDoctors);
         showNotification(`Showing doctors from ${hospital.name}`, 'info');
     }
+}
+
+// Add this new function to handle doctor details from hospital view
+function viewDoctorDetails(doctorId) {
+    openDoctorAvailability(doctorId);
 }
 
 // Mock Data Functions (Fallback when API is not available)
@@ -1428,3 +1638,9 @@ window.clearSearch = clearSearch;
 window.clearLocationSearch = clearLocationSearch;
 window.viewAllDoctors = viewAllDoctors;
 window.bookDoctorAppointment = bookDoctorAppointment;
+window.openDoctorAvailability = openDoctorAvailability;
+window.openBookingDashboard = openBookingDashboard;
+window.viewDoctorDetails = viewDoctorDetails;
+window.showNotification = showNotification;
+window.showModal = showModal;
+window.closeAllModals = closeAllModals;

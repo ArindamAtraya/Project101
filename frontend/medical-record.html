@@ -84,6 +84,11 @@
             border-left: 4px solid var(--primary);
         }
 
+        .record-card.hospital-uploaded {
+            border-left: 4px solid var(--secondary);
+            background: #f0fdf4;
+        }
+
         .record-header {
             display: flex;
             justify-content: space-between;
@@ -140,6 +145,15 @@
             margin-top: 15px;
         }
 
+        .hospital-badge {
+            background: var(--secondary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -150,6 +164,179 @@
             font-size: 4rem;
             margin-bottom: 20px;
             opacity: 0.5;
+        }
+
+        /* Quick Access Section */
+        .quick-access-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .quick-access-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        /* Test Results Styles */
+        .test-results-container {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .patient-info {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-item label {
+            font-weight: 600;
+            color: var(--gray);
+        }
+
+        .results-list {
+            margin-bottom: 20px;
+        }
+
+        .result-item {
+            border: 1px solid var(--gray-light);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .result-item.normal {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .result-item.abnormal {
+            border-left: 4px solid var(--danger);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .test-name {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .result-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .result-item.normal .result-status {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .result-item.abnormal .result-status {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .parameter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .param-name {
+            flex: 2;
+            color: var(--gray);
+        }
+
+        .param-value {
+            flex: 1;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .param-range {
+            flex: 2;
+            color: var(--gray);
+            font-size: 0.8rem;
+            text-align: right;
+        }
+
+        .result-note {
+            background: #fef3c7;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #92400e;
+        }
+
+        .results-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-light);
+        }
+
+        /* Login Required Section */
+        .login-required {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .login-required i {
+            font-size: 4rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .quick-access-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .parameter {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .param-value, .param-range {
+                text-align: left;
+            }
+            
+            .results-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -164,11 +351,11 @@
                 <div class="nav-links">
                     <a href="index.html">Home</a>
                     <a href="patient-dashboard.html">Dashboard</a>
-                    <a href="medical-records.html" class="active">Medical Records</a>
+                    <a href="medical-record.html" class="active">Medical Records</a>
                     <a href="prescriptions.html">Prescriptions</a>
                 </div>
-                <div class="auth-buttons">
-                    <button class="btn btn-outline" onclick="logout()">Logout</button>
+                <div class="auth-buttons" id="authButtonsContainer">
+                    <!-- Dynamically populated -->
                 </div>
             </div>
         </div>
@@ -176,54 +363,97 @@
 
     <div class="container">
         <div class="medical-records-container">
-            <div class="records-header">
-                <h1>Medical Records</h1>
-                <button class="btn btn-primary" onclick="showUploadModal()">
-                    <i class="fas fa-upload"></i> Upload Record
-                </button>
-            </div>
-
-            <div class="records-stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalRecords">0</div>
-                    <div class="stat-label">Total Records</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="labReports">0</div>
-                    <div class="stat-label">Lab Reports</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="prescriptions">0</div>
-                    <div class="stat-label">Prescriptions</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="scans">0</div>
-                    <div class="stat-label">Scans & Images</div>
+            <!-- Login Required Message (hidden when logged in) -->
+            <div id="loginRequiredSection" class="login-required" style="display: none;">
+                <i class="fas fa-lock"></i>
+                <h2>Access to Medical Records</h2>
+                <p>Please login to view and manage your medical records</p>
+                <div style="margin-top: 30px;">
+                    <button class="btn btn-primary" onclick="showLoginModal()">
+                        <i class="fas fa-sign-in-alt"></i> Login to Continue
+                    </button>
+                    <button class="btn btn-outline" onclick="window.location.href='index.html'" style="margin-left: 15px;">
+                        <i class="fas fa-home"></i> Back to Home
+                    </button>
                 </div>
             </div>
 
-            <div class="records-actions">
-                <div class="search-box">
-                    <input type="text" id="searchRecords" placeholder="Search records...">
-                    <button onclick="searchRecords()"><i class="fas fa-search"></i></button>
+            <!-- Medical Records Content (shown when logged in) -->
+            <div id="medicalRecordsContent" style="display: none;">
+                <div class="records-header">
+                    <h1>Medical Records</h1>
+                    <button class="btn btn-primary" onclick="showUploadModal()">
+                        <i class="fas fa-upload"></i> Upload Record
+                    </button>
                 </div>
-                <select id="sortRecords" onchange="loadRecords()">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="type">By Type</option>
-                </select>
-            </div>
 
-            <div class="records-filter">
-                <div class="filter-tag active" data-filter="all" onclick="filterRecords('all')">All Records</div>
-                <div class="filter-tag" data-filter="lab" onclick="filterRecords('lab')">Lab Reports</div>
-                <div class="filter-tag" data-filter="prescription" onclick="filterRecords('prescription')">Prescriptions</div>
-                <div class="filter-tag" data-filter="scan" onclick="filterRecords('scan')">Scans</div>
-                <div class="filter-tag" data-filter="vaccination" onclick="filterRecords('vaccination')">Vaccinations</div>
-            </div>
+                <!-- Quick Access Section -->
+                <div class="quick-access-section">
+                    <h3>Quick Access to Hospital Reports</h3>
+                    <p>Access lab reports and test results uploaded by hospitals</p>
+                    <form id="quickAccessForm" class="quick-access-form">
+                        <div class="form-group">
+                            <label>Patient ID</label>
+                            <input type="text" class="form-control" id="patientId" placeholder="Enter your patient ID" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Date of Birth</label>
+                            <input type="date" class="form-control" id="patientDob" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Access Code</label>
+                            <input type="text" class="form-control" id="accessCode" placeholder="Enter access code from your report">
+                            <small class="form-text">Find this code on your test report slip</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Find Hospital Reports
+                        </button>
+                    </form>
+                </div>
 
-            <div class="records-grid" id="recordsContainer">
-                <!-- Records will be loaded here -->
+                <div class="records-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalRecords">0</div>
+                        <div class="stat-label">Total Records</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="labReports">0</div>
+                        <div class="stat-label">Lab Reports</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="hospitalReports">0</div>
+                        <div class="stat-label">Hospital Uploads</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="scans">0</div>
+                        <div class="stat-label">Scans & Images</div>
+                    </div>
+                </div>
+
+                <div class="records-actions">
+                    <div class="search-box">
+                        <input type="text" id="searchRecords" placeholder="Search records...">
+                        <button onclick="searchRecords()"><i class="fas fa-search"></i></button>
+                    </div>
+                    <select id="sortRecords" onchange="loadRecords()">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="type">By Type</option>
+                        <option value="source">By Source</option>
+                    </select>
+                </div>
+
+                <div class="records-filter">
+                    <div class="filter-tag active" data-filter="all" onclick="filterRecords('all')">All Records</div>
+                    <div class="filter-tag" data-filter="lab" onclick="filterRecords('lab')">Lab Reports</div>
+                    <div class="filter-tag" data-filter="prescription" onclick="filterRecords('prescription')">Prescriptions</div>
+                    <div class="filter-tag" data-filter="scan" onclick="filterRecords('scan')">Scans</div>
+                    <div class="filter-tag" data-filter="hospital" onclick="filterRecords('hospital')">Hospital Uploads</div>
+                </div>
+
+                <div class="records-grid" id="recordsContainer">
+                    <!-- Records will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -287,6 +517,90 @@
                     <!-- Record details will be loaded here -->
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Test Results Modal -->
+    <div class="modal" id="testResultsModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Hospital Lab Report</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="test-results-container">
+                <div class="patient-info">
+                    <h4>Patient Information</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Name:</label>
+                            <span id="patientNameDisplay">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Patient ID:</label>
+                            <span id="patientIdDisplay">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Age:</label>
+                            <span id="patientAgeDisplay">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Report Date:</label>
+                            <span id="reportDateDisplay">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Hospital:</label>
+                            <span id="hospitalNameDisplay">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Doctor:</label>
+                            <span id="doctorNameDisplay">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="results-list">
+                    <h4>Laboratory Results</h4>
+                    <div id="labResultsContainer">
+                        <!-- Lab results will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="results-actions">
+                    <button class="btn btn-primary" onclick="downloadResults()">
+                        <i class="fas fa-download"></i> Download Report
+                    </button>
+                    <button class="btn btn-outline" onclick="shareResults()">
+                        <i class="fas fa-share"></i> Share with Doctor
+                    </button>
+                    <button class="btn btn-outline" onclick="bookConsultation()">
+                        <i class="fas fa-calendar"></i> Book Consultation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Login to Access Medical Records</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="medicalRecordsLoginForm">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" class="form-control" id="mrLoginEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" class="form-control" id="mrLoginPassword" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+            <p style="text-align: center; margin-top: 15px;">Don't have an account? <a href="#" onclick="showSignupModal()">Sign Up</a></p>
         </div>
     </div>
 
