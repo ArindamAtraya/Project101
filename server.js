@@ -16,9 +16,10 @@ app.use(express.json());
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// In-memory database (for demo)
+// In-memory database (for demo - enhanced with healthcare providers)
 let users = [];
 let doctors = [];
+let healthcareProviders = [];
 let appointments = [];
 let tests = [];
 
@@ -44,10 +45,158 @@ function initializeSampleData() {
             phone: '+1234567891',
             role: 'doctor',
             createdAt: new Date()
+        },
+        {
+            id: 'provider1',
+            name: 'Apollo Pharmacy',
+            email: 'pharmacy@demo.com',
+            password: hashedPassword,
+            phone: '+1234567892',
+            role: 'pharmacy',
+            providerInfo: {
+                facilityName: 'Apollo Pharmacy',
+                facilityType: 'pharmacy',
+                registrationNumber: 'PHARM12345',
+                address: '123 Medical Street, City Center'
+            },
+            createdAt: new Date()
+        },
+        {
+            id: 'provider2',
+            name: 'City Health Clinic',
+            email: 'clinic@demo.com',
+            password: hashedPassword,
+            phone: '+1234567893',
+            role: 'clinic',
+            providerInfo: {
+                facilityName: 'City Health Clinic',
+                facilityType: 'clinic',
+                registrationNumber: 'CLINIC67890',
+                address: '456 Health Avenue, Downtown'
+            },
+            createdAt: new Date()
+        },
+        {
+            id: 'provider3',
+            name: 'Metro Hospital',
+            email: 'hospital@demo.com',
+            password: hashedPassword,
+            phone: '+1234567894',
+            role: 'hospital',
+            providerInfo: {
+                facilityName: 'Metro Hospital',
+                facilityType: 'hospital',
+                registrationNumber: 'HOSPITAL123',
+                address: '789 Care Boulevard, Medical District'
+            },
+            createdAt: new Date()
         }
     ];
 
-    // Sample doctors
+    // Sample healthcare providers
+    healthcareProviders = [
+        {
+            id: 'provider1',
+            userId: 'provider1',
+            name: 'Apollo Pharmacy & Clinic',
+            type: 'pharmacy',
+            address: '123 Medical Street, City Center',
+            phone: '+1234567892',
+            email: 'pharmacy@demo.com',
+            registrationNumber: 'PHARM12345',
+            doctors: [
+                {
+                    id: 'pharm_doc1',
+                    name: 'Dr. Robert Chen',
+                    specialty: 'General Medicine',
+                    qualification: 'MBBS, MD',
+                    experience: '8 years',
+                    consultationFee: 500,
+                    availableSlots: ['09:00', '11:00', '15:00', '17:00']
+                },
+                {
+                    id: 'pharm_doc2',
+                    name: 'Dr. Lisa Wang',
+                    specialty: 'Pharmacology',
+                    qualification: 'B.Pharm, M.Pharm',
+                    experience: '6 years',
+                    consultationFee: 400,
+                    availableSlots: ['10:00', '14:00', '16:00']
+                }
+            ],
+            facilities: ['Pharmacy', 'Basic Consultation', 'Lab Tests', 'Medicine Delivery'],
+            rating: 4.6,
+            totalReviews: 89
+        },
+        {
+            id: 'provider2',
+            userId: 'provider2',
+            name: 'City Health Clinic',
+            type: 'clinic',
+            address: '456 Health Avenue, Downtown',
+            phone: '+1234567893',
+            email: 'clinic@demo.com',
+            registrationNumber: 'CLINIC67890',
+            doctors: [
+                {
+                    id: 'clinic_doc1',
+                    name: 'Dr. Priya Sharma',
+                    specialty: 'Dermatology',
+                    qualification: 'MBBS, MD - Dermatology',
+                    experience: '6 years',
+                    consultationFee: 600,
+                    availableSlots: ['10:00', '12:00', '14:00', '16:00']
+                },
+                {
+                    id: 'clinic_doc2',
+                    name: 'Dr. Michael Brown',
+                    specialty: 'Pediatrics',
+                    qualification: 'MBBS, DCH',
+                    experience: '5 years',
+                    consultationFee: 550,
+                    availableSlots: ['09:30', '11:30', '15:30']
+                }
+            ],
+            facilities: ['Consultation', 'Minor Procedures', 'Vaccination', 'Lab Tests'],
+            rating: 4.7,
+            totalReviews: 124
+        },
+        {
+            id: 'provider3',
+            userId: 'provider3',
+            name: 'Metro Hospital',
+            type: 'hospital',
+            address: '789 Care Boulevard, Medical District',
+            phone: '+1234567894',
+            email: 'hospital@demo.com',
+            registrationNumber: 'HOSPITAL123',
+            doctors: [
+                {
+                    id: 'hosp_doc1',
+                    name: 'Dr. James Wilson',
+                    specialty: 'Cardiology',
+                    qualification: 'MBBS, MD - Cardiology',
+                    experience: '12 years',
+                    consultationFee: 800,
+                    availableSlots: ['08:00', '10:00', '14:00', '16:00']
+                },
+                {
+                    id: 'hosp_doc2',
+                    name: 'Dr. Maria Garcia',
+                    specialty: 'Neurology',
+                    qualification: 'MBBS, MD - Neurology',
+                    experience: '9 years',
+                    consultationFee: 750,
+                    availableSlots: ['09:00', '11:00', '15:00']
+                }
+            ],
+            facilities: ['Emergency', 'ICU', 'Pharmacy', 'Lab', 'Surgery', 'Radiology', 'ICU'],
+            rating: 4.8,
+            totalReviews: 256
+        }
+    ];
+
+    // Sample doctors (now includes provider doctors)
     doctors = [
         {
             id: 'doc1',
@@ -96,6 +245,25 @@ function initializeSampleData() {
         }
     ];
 
+    // Add provider doctors to the main doctors list
+    healthcareProviders.forEach(provider => {
+        provider.doctors.forEach(doctor => {
+            doctors.push({
+                ...doctor,
+                hospital: provider.name,
+                rating: provider.rating,
+                reviews: provider.totalReviews,
+                distance: 'Nearby',
+                availability: 'Available Today',
+                providerId: provider.id,
+                providerType: provider.type,
+                qualifications: [doctor.qualification],
+                experience: doctor.experience,
+                about: `${doctor.specialty} specialist at ${provider.name}`
+            });
+        });
+    });
+
     // Sample tests
     tests = [
         {
@@ -115,6 +283,31 @@ function initializeSampleData() {
             homeCollection: true,
             fasting: true,
             reportTime: '6 hours'
+        },
+        {
+            id: 'test3',
+            name: 'Thyroid Profile',
+            description: 'Comprehensive thyroid function test',
+            price: 699,
+            homeCollection: true,
+            fasting: false,
+            reportTime: '24 hours'
+        }
+    ];
+
+    // Sample appointments
+    appointments = [
+        {
+            id: 'appt1',
+            doctorId: 'doc1',
+            doctorName: 'Dr. Sarah Wilson',
+            patientId: 'user1',
+            patientName: 'John Doe',
+            date: new Date().toISOString().split('T')[0],
+            time: '10:00',
+            status: 'confirmed',
+            notes: 'Regular checkup',
+            createdAt: new Date()
         }
     ];
 }
@@ -137,6 +330,16 @@ function authenticateToken(req, res, next) {
     });
 }
 
+// Helper function for default facilities
+function getDefaultFacilities(providerType) {
+    const facilities = {
+        pharmacy: ['Pharmacy', 'Basic Consultation', 'Medicine Delivery'],
+        clinic: ['Consultation', 'Minor Procedures', 'Vaccination', 'Lab Tests'],
+        hospital: ['Emergency', 'ICU', 'Pharmacy', 'Lab', 'Surgery', 'Radiology']
+    };
+    return facilities[providerType] || ['Healthcare Services'];
+}
+
 // Routes
 
 // Serve frontend files
@@ -146,6 +349,14 @@ app.get('/', (req, res) => {
 
 app.get('/dashboard.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dashboard.html'));
+});
+
+app.get('/provider-auth.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/provider-auth.html'));
+});
+
+app.get('/provider-dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/provider-dashboard.html'));
 });
 
 // Health check endpoint
@@ -159,6 +370,7 @@ app.get('/api/health', (req, res) => {
             '/api/auth/login',
             '/api/doctors',
             '/api/hospitals',
+            '/api/healthcare-providers',
             '/api/appointments'
         ]
     });
@@ -167,9 +379,9 @@ app.get('/api/health', (req, res) => {
 // Auth Routes
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password, phone, role = 'patient' } = req.body;
+        const { name, email, password, phone, role = 'patient', providerInfo } = req.body;
 
-        console.log('Registration attempt:', { name, email, role });
+        console.log('Registration attempt:', { name, email, role, providerInfo });
 
         // Check if user already exists
         const existingUser = users.find(user => user.email === email);
@@ -188,10 +400,32 @@ app.post('/api/auth/register', async (req, res) => {
             password: hashedPassword,
             phone,
             role,
+            providerInfo: providerInfo || null,
             createdAt: new Date()
         };
 
         users.push(user);
+
+        // If it's a provider, create healthcare provider record
+        if (['pharmacy', 'clinic', 'hospital'].includes(role)) {
+            const provider = {
+                id: user.id,
+                userId: user.id,
+                name: providerInfo.facilityName,
+                type: role,
+                address: providerInfo.address,
+                phone: phone,
+                email: email,
+                registrationNumber: providerInfo.registrationNumber,
+                doctors: [],
+                facilities: getDefaultFacilities(role),
+                rating: 4.5,
+                totalReviews: 0
+            };
+            healthcareProviders.push(provider);
+            console.log('Healthcare provider registered:', provider.name);
+        }
+
         console.log('User registered successfully:', user.email);
 
         // Generate token
@@ -208,7 +442,8 @@ app.post('/api/auth/register', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                phone: user.phone
+                phone: user.phone,
+                providerInfo: user.providerInfo
             }
         });
     } catch (error) {
@@ -253,7 +488,8 @@ app.post('/api/auth/login', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                phone: user.phone
+                phone: user.phone,
+                providerInfo: user.providerInfo
             }
         });
     } catch (error) {
@@ -274,14 +510,15 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            phone: user.phone
+            phone: user.phone,
+            providerInfo: user.providerInfo
         }
     });
 });
 
 // Doctors Routes
 app.get('/api/doctors', (req, res) => {
-    const { specialty, hospital } = req.query;
+    const { specialty, hospital, search } = req.query;
     
     let filteredDoctors = doctors;
 
@@ -297,6 +534,14 @@ app.get('/api/doctors', (req, res) => {
         );
     }
 
+    if (search) {
+        filteredDoctors = filteredDoctors.filter(doctor =>
+            doctor.name.toLowerCase().includes(search.toLowerCase()) ||
+            doctor.specialty.toLowerCase().includes(search.toLowerCase()) ||
+            doctor.hospital.toLowerCase().includes(search.toLowerCase())
+        );
+    }
+
     console.log('Returning doctors:', filteredDoctors.length);
     res.json(filteredDoctors);
 });
@@ -307,6 +552,96 @@ app.get('/api/doctors/:id', (req, res) => {
         return res.status(404).json({ error: 'Doctor not found' });
     }
     res.json(doctor);
+});
+
+// Healthcare Providers Routes
+app.get('/api/healthcare-providers', (req, res) => {
+    const { type, search } = req.query;
+    
+    let filteredProviders = healthcareProviders;
+
+    if (type) {
+        filteredProviders = filteredProviders.filter(provider =>
+            provider.type.toLowerCase() === type.toLowerCase()
+        );
+    }
+
+    if (search) {
+        filteredProviders = filteredProviders.filter(provider =>
+            provider.name.toLowerCase().includes(search.toLowerCase()) ||
+            provider.doctors.some(doctor => 
+                doctor.name.toLowerCase().includes(search.toLowerCase()) ||
+                doctor.specialty.toLowerCase().includes(search.toLowerCase())
+            )
+        );
+    }
+
+    console.log('Returning healthcare providers:', filteredProviders.length);
+    res.json(filteredProviders);
+});
+
+app.get('/api/healthcare-providers/:id', (req, res) => {
+    const provider = healthcareProviders.find(p => p.id === req.params.id);
+    if (!provider) {
+        return res.status(404).json({ error: 'Healthcare provider not found' });
+    }
+    res.json(provider);
+});
+
+// Add doctor to healthcare provider
+app.post('/api/healthcare-providers/:id/doctors', authenticateToken, (req, res) => {
+    try {
+        const { name, specialty, qualification, experience, consultationFee, availableSlots } = req.body;
+        const providerId = req.params.id;
+        
+        const provider = healthcareProviders.find(p => p.id === providerId);
+        
+        if (!provider) {
+            return res.status(404).json({ error: 'Healthcare provider not found' });
+        }
+
+        // Check if user owns this provider
+        if (provider.userId !== req.user.id) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const newDoctor = {
+            id: `doc_${Date.now()}`,
+            name,
+            specialty,
+            qualification,
+            experience,
+            consultationFee,
+            availableSlots: availableSlots || []
+        };
+
+        provider.doctors.push(newDoctor);
+
+        // Also add to main doctors list
+        const mainDoctor = {
+            ...newDoctor,
+            hospital: provider.name,
+            rating: provider.rating,
+            reviews: provider.totalReviews,
+            distance: 'Nearby',
+            availability: 'Available Today',
+            providerId: provider.id,
+            providerType: provider.type,
+            qualifications: [qualification],
+            about: `${specialty} specialist at ${provider.name}`
+        };
+        doctors.push(mainDoctor);
+
+        console.log('Doctor added to provider:', provider.name, newDoctor.name);
+
+        res.status(201).json({
+            message: 'Doctor added successfully',
+            doctor: newDoctor
+        });
+    } catch (error) {
+        console.error('Add doctor error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Hospitals Routes
@@ -331,6 +666,16 @@ app.get('/api/hospitals', (req, res) => {
             distance: '1.8 km away',
             facilities: ['Emergency', 'Pharmacy', 'Lab'],
             doctors: doctors.filter(d => d.hospital === 'City Hospital').length
+        },
+        {
+            id: 'hosp3',
+            name: 'Metro Hospital',
+            specialty: 'Super Specialty',
+            rating: 4.9,
+            address: '789 Care Boulevard, Medical District',
+            distance: '3.5 km away',
+            facilities: ['Emergency', 'ICU', 'Pharmacy', 'Lab', 'Surgery', 'Radiology'],
+            doctors: doctors.filter(d => d.hospital === 'Metro Hospital').length
         }
     ];
     res.json(hospitalsList);
@@ -356,6 +701,15 @@ app.get('/api/pharmacies', (req, res) => {
             distance: '2.1 km away',
             delivery: '45 min delivery',
             open24x7: false
+        },
+        {
+            id: 'pharm3',
+            name: 'Wellness Pharmacy',
+            rating: 4.5,
+            address: '789 Medical Road, Health District',
+            distance: '0.8 km away',
+            delivery: '25 min delivery',
+            open24x7: true
         }
     ];
     res.json(pharmaciesList);
@@ -374,9 +728,9 @@ app.get('/api/appointments', authenticateToken, (req, res) => {
 
 app.post('/api/appointments', authenticateToken, (req, res) => {
     try {
-        const { doctorId, doctorName, date, time, notes } = req.body;
+        const { doctorId, doctorName, providerId, providerName, providerType, date, time, notes } = req.body;
 
-        console.log('Booking appointment:', { doctorId, doctorName, date, time });
+        console.log('Booking appointment:', { doctorId, doctorName, providerId, providerName, date, time });
 
         const doctor = doctors.find(d => d.id === doctorId);
         if (!doctor) {
@@ -387,6 +741,9 @@ app.post('/api/appointments', authenticateToken, (req, res) => {
             id: uuidv4(),
             doctorId,
             doctorName,
+            providerId,
+            providerName,
+            providerType,
             patientId: req.user.id,
             patientName: req.user.name,
             date,
@@ -412,8 +769,33 @@ app.get('/api/test-data', (req, res) => {
     res.json({
         users: users.length,
         doctors: doctors.length,
+        healthcareProviders: healthcareProviders.length,
         appointments: appointments.length,
         tests: tests.length
+    });
+});
+
+// Demo credentials endpoint
+app.get('/api/demo-credentials', (req, res) => {
+    res.json({
+        patient: {
+            email: 'john@example.com',
+            password: 'password123'
+        },
+        providers: {
+            pharmacy: {
+                email: 'pharmacy@demo.com',
+                password: 'password123'
+            },
+            clinic: {
+                email: 'clinic@demo.com',
+                password: 'password123'
+            },
+            hospital: {
+                email: 'hospital@demo.com',
+                password: 'password123'
+            }
+        }
     });
 });
 
@@ -427,10 +809,18 @@ app.listen(PORT, () => {
     console.log(`🔗 API Base: http://localhost:${PORT}/api`);
     console.log(`❤️  Health Check: http://localhost:${PORT}/api/health`);
     console.log(`📊 Test Data: http://localhost:${PORT}/api/test-data`);
+    console.log(`🔑 Demo Credentials: http://localhost:${PORT}/api/demo-credentials`);
     console.log('\n📋 Available API Endpoints:');
     console.log('   POST /api/auth/register');
     console.log('   POST /api/auth/login');
     console.log('   GET  /api/doctors');
+    console.log('   GET  /api/healthcare-providers');
+    console.log('   POST /api/healthcare-providers/:id/doctors');
     console.log('   GET  /api/hospitals');
     console.log('   POST /api/appointments');
+    console.log('\n👥 Demo Login Credentials:');
+    console.log('   Patient: john@example.com / password123');
+    console.log('   Pharmacy: pharmacy@demo.com / password123');
+    console.log('   Clinic: clinic@demo.com / password123');
+    console.log('   Hospital: hospital@demo.com / password123');
 });
